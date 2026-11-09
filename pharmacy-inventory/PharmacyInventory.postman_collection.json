@@ -1,0 +1,353 @@
+{
+  "info": {
+    "name": "Enterprise Pharmacy Inventory & Dispensing System",
+    "description": "Postman API collection for Pharmacy Inventory System with Concurrency-Safe FEFO, JWT RBAC, Sales History, Returns, and Adjustments.",
+    "_postman_id": "pharmacy-inventory-collection-v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Login as Pharmacist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.token);",
+                  "    console.log('JWT Token stored successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"pharmacist\",\n  \"password\": \"Pharm@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login as Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.data.token);",
+                  "    console.log('Admin JWT Token stored successfully');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"Admin@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register New Pharmacist",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"jane_pharmacist\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Jane Doe\",\n  \"role\": \"ROLE_PHARMACIST\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Medicine CRUD & Pagination",
+      "item": [
+        {
+          "name": "Create Medicine",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/medicines", "host": ["{{baseUrl}}"], "path": ["medicines"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Metformin\",\n  \"description\": \"Antidiabetic medication for type 2 diabetes\",\n  \"category\": \"Diabetes\",\n  \"lowStockThreshold\": 20\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Medicines (Paginated & Sorted)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/medicines?page=0&size=10&sort=name,asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["medicines"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sort", "value": "name,asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Medicine By ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/medicines/1", "host": ["{{baseUrl}}"], "path": ["medicines", "1"] }
+          }
+        },
+        {
+          "name": "Update Medicine",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/medicines/1", "host": ["{{baseUrl}}"], "path": ["medicines", "1"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Paracetamol Extra\",\n  \"description\": \"Fast-acting pain and fever relief\",\n  \"category\": \"Pain Relief\",\n  \"lowStockThreshold\": 30\n}"
+            }
+          }
+        },
+        {
+          "name": "Deactivate Medicine (Admin Only)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/medicines/1/deactivate", "host": ["{{baseUrl}}"], "path": ["medicines", "1", "deactivate"] }
+          }
+        },
+        {
+          "name": "Reactivate Medicine (Admin Only)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/medicines/1/activate", "host": ["{{baseUrl}}"], "path": ["medicines", "1", "activate"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Batch Management",
+      "item": [
+        {
+          "name": "Add Batch to Medicine",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/batches", "host": ["{{baseUrl}}"], "path": ["batches"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"medicineName\": \"Paracetamol\",\n  \"batchNumber\": \"PARA-BATCH-003\",\n  \"quantity\": 120,\n  \"expiryDate\": \"2027-10-31\",\n  \"costPrice\": 2.20,\n  \"sellingPrice\": 5.00\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Batches (Paginated, Sorted by Expiry)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/batches?page=0&size=10&sort=expiryDate,asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["batches"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sort", "value": "expiryDate,asc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Batch by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/batches/1", "host": ["{{baseUrl}}"], "path": ["batches", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Concurrency-Safe FEFO Sales",
+      "item": [
+        {
+          "name": "Sell Medicine (Concurrency-Safe FEFO)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/sales", "host": ["{{baseUrl}}"], "path": ["sales"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerName\": \"Alice Smith\",\n  \"items\": [\n    {\n      \"medicineName\": \"Paracetamol\",\n      \"quantity\": 60\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "View Sales History (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/sales?page=0&size=10&sort=saleDate,desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["sales"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sort", "value": "saleDate,desc" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Sale Details by ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/sales/1", "host": ["{{baseUrl}}"], "path": ["sales", "1"] }
+          }
+        },
+        {
+          "name": "Process Sales Return",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/sales/1/return", "host": ["{{baseUrl}}"], "path": ["sales", "1", "return"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"saleItemId\": 1,\n      \"quantity\": 5\n    }\n  ],\n  \"reason\": \"Customer requested partial return of unopened strips\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Inventory Alerts & Expired Stock",
+      "item": [
+        {
+          "name": "Get Low-Stock Alerts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/inventory/alerts/low-stock", "host": ["{{baseUrl}}"], "path": ["inventory", "alerts", "low-stock"] }
+          }
+        },
+        {
+          "name": "Get Expiring Batches (Next 60 Days)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/alerts/expiring?days=60",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "alerts", "expiring"],
+              "query": [{ "key": "days", "value": "60" }]
+            }
+          }
+        },
+        {
+          "name": "View Expired Batches in Stock",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/inventory/expired", "host": ["{{baseUrl}}"], "path": ["inventory", "expired"] }
+          }
+        },
+        {
+          "name": "Dispose Expired Batch (Admin Only)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/inventory/expired/1/dispose", "host": ["{{baseUrl}}"], "path": ["inventory", "expired", "1", "dispose"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Stock Adjustments",
+      "item": [
+        {
+          "name": "Record Damaged Stock",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/inventory/adjustments", "host": ["{{baseUrl}}"], "path": ["inventory", "adjustments"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"batchId\": 1,\n  \"adjustmentType\": \"DAMAGE\",\n  \"quantityAdjusted\": -5,\n  \"reason\": \"Packaging damaged in transit\"\n}"
+            }
+          }
+        },
+        {
+          "name": "View Adjustments History (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": {
+              "raw": "{{baseUrl}}/inventory/adjustments?page=0&size=10&sort=adjustedAt,desc",
+              "host": ["{{baseUrl}}"],
+              "path": ["inventory", "adjustments"],
+              "query": [
+                { "key": "page", "value": "0" },
+                { "key": "size", "value": "10" },
+                { "key": "sort", "value": "adjustedAt,desc" }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
